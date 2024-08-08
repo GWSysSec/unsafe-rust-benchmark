@@ -24,6 +24,10 @@ use rustc_target::abi::call::FnAbi;
 use rustc_target::abi::{Abi, Align, Scalar, Size, WrappingRange};
 use rustc_target::spec::HasTargetSpec;
 
+// UNSAFE-RUST BEGIN
+use rustc_middle::mir::{Body, Statement, Terminator};
+// UNSAFE-RUST END
+
 #[derive(Copy, Clone)]
 pub enum OverflowOp {
     Add,
@@ -440,4 +444,9 @@ pub trait BuilderMethods<'a, 'tcx>:
     fn zext(&mut self, val: Self::Value, dest_ty: Self::Type) -> Self::Value;
 
     fn apply_attrs_to_cleanup_callsite(&mut self, llret: Self::Value);
+
+    /// UNSAFE-RUST BEGIN
+    fn check_process_unsafe_stmt(&mut self, mir: &Body<'tcx>, stmt: &Statement<'tcx>);
+    fn check_process_unsafe_terminator(&mut self, mir: &Body<'tcx>, term: &Terminator<'tcx>);
+    // UNSAFE-RUST END
 }

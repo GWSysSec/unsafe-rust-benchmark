@@ -1006,6 +1006,10 @@ fn promote_candidates<'tcx>(
             body.span,
             None,
             body.tainted_by_errors,
+            // UNSAFE-RUST BEGIN
+            // No need to collect unsafe code information for constant promotion.
+            None,
+            // UNSAFE-RUST END
         );
         promoted.phase = MirPhase::Analysis(AnalysisPhase::Initial);
 

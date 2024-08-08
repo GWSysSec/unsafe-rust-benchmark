@@ -715,6 +715,10 @@ fn construct_error(tcx: TyCtxt<'_>, def_id: LocalDefId, guar: ErrorGuaranteed) -
         span,
         coroutine,
         Some(guar),
+        // UNSAFE-RUST BEGIN
+        // No need to collect unsafe code information for error reporting.
+        None,
+        // UNSAFE-RUST END
     )
 }
 
@@ -802,6 +806,9 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
             self.fn_span,
             self.coroutine,
             None,
+            // UNSAFE-RUST BEGIN
+            Some(self.thir),
+            // UNSAFE-RUST END
         );
         body.coverage_branch_info = self.coverage_branch_info.and_then(|b| b.into_done());
         body

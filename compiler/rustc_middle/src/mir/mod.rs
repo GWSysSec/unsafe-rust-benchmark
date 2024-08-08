@@ -70,6 +70,11 @@ pub mod traversal;
 mod type_foldable;
 pub mod visit;
 
+// UNSAFE-RUST BEGIN
+pub mod unsafety;
+use unsafety::*;
+// UNSAFE-RUST END
+
 pub use self::generic_graph::graphviz_safe_def_name;
 pub use self::graphviz::write_mir_graphviz;
 pub use self::pretty::{
@@ -443,6 +448,11 @@ pub struct Body<'tcx> {
     /// If `-Cinstrument-coverage` is not active, or if an individual function
     /// is not eligible for coverage, then this should always be `None`.
     pub function_coverage_info: Option<Box<coverage::FunctionCoverageInfo>>,
+
+    // UNSAFE-RUST BEGIN
+    /// Information about the unsafe code of the function.
+    pub unsafe_code: UnsafeCode,
+    // UNSAFE-RUST END
 }
 
 impl<'tcx> Body<'tcx> {
@@ -457,6 +467,12 @@ impl<'tcx> Body<'tcx> {
         span: Span,
         coroutine: Option<Box<CoroutineInfo<'tcx>>>,
         tainted_by_errors: Option<ErrorGuaranteed>,
+        // UNSAFE-RUST BEGIN
+        // We need the target function's THIR for thir::blocks' unsafety information.
+        // We make it Option because in certain cases, there is no need to collect
+        // the unsafety information.
+        thir: Option<&rustc_middle::thir::Thir<'tcx>>,
+        // UNSAFE-RUST END
     ) -> Self {
         // We need `arg_count` locals, and one for the return place.
         assert!(
@@ -486,6 +502,9 @@ impl<'tcx> Body<'tcx> {
             tainted_by_errors,
             coverage_branch_info: None,
             function_coverage_info: None,
+            // UNSAFE-RUST BEGIN
+            unsafe_code: UnsafeCode::new(thir),
+            // UNSAFE-RUST END
         };
         body.is_polymorphic = body.has_non_region_param();
         body
@@ -517,6 +536,9 @@ impl<'tcx> Body<'tcx> {
             tainted_by_errors: None,
             coverage_branch_info: None,
             function_coverage_info: None,
+            // UNSAFE-RUST BEGIN
+            unsafe_code: UnsafeCode::new_empty(),
+            // UNSAFE-RUST END
         };
         body.is_polymorphic = body.has_non_region_param();
         body

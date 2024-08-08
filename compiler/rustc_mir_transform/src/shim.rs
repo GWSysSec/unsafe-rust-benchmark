@@ -325,6 +325,10 @@ fn new_body<'tcx>(
         None,
         // FIXME(compiler-errors): is this correct?
         None,
+        // UNSAFE-RUST BEGIN
+        //? What code is generated exactly? Do we need to handle it?
+        None,
+        // UNSAFE-RUST END
     )
 }
 

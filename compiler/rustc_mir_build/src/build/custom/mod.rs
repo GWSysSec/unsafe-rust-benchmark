@@ -32,6 +32,10 @@ use rustc_span::Span;
 
 mod parse;
 
+// UNSAFE-RUST BEGIN
+use rustc_middle::mir::unsafety::UnsafeCode;
+// UNSAFE-RUST END
+
 pub(super) fn build_custom_mir<'tcx>(
     tcx: TyCtxt<'tcx>,
     did: DefId,
@@ -64,6 +68,9 @@ pub(super) fn build_custom_mir<'tcx>(
         pass_count: 0,
         coverage_branch_info: None,
         function_coverage_info: None,
+        // UNSAFE-RUST BEGIN
+        unsafe_code: UnsafeCode::new(Some(thir)),
+        // UNSAFE-RUST END
     };
 
     body.local_decls.push(LocalDecl::new(return_ty, return_ty_span));

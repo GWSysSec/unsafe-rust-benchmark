@@ -32,11 +32,20 @@ use std::ops::Deref;
 use std::ptr;
 use tracing::{debug, instrument};
 
+// UNSAFE-RUST BEGIN
+use rustc_middle::mir::{Body, Statement, Terminator};
+// UNSAFE-RUST END
+
 // All Builders must have an llfn associated with them
 #[must_use]
 pub struct Builder<'a, 'll, 'tcx> {
     pub llbuilder: &'ll mut llvm::Builder<'ll>,
     pub cx: &'a CodegenCx<'ll, 'tcx>,
+
+    // UNSAFE-RUST BEGIN
+    /// Indicate whether the Builder is processing code in an unsafe block/fn.
+    pub process_unsafe: bool,
+    // UNSAFE-RUST END
 }
 
 impl Drop for Builder<'_, '_, '_> {
@@ -1305,6 +1314,16 @@ impl<'a, 'll, 'tcx> BuilderMethods<'a, 'tcx> for Builder<'a, 'll, 'tcx> {
             attributes::apply_to_callsite(llret, llvm::AttributePlace::Function, &[cold_inline]);
         }
     }
+
+    // UNSAFE-RUST BEGIN
+    fn check_process_unsafe_stmt(&mut self, mir: &Body<'tcx>, stmt: &Statement<'tcx>) {
+        self.process_unsafe = mir.unsafe_code.in_unsafe(stmt.source_info.span);
+    }
+
+    fn check_process_unsafe_terminator(&mut self, mir: &Body<'tcx>, term: &Terminator<'tcx>) {
+        self.process_unsafe = mir.unsafe_code.in_unsafe(term.source_info.span);
+    }
+    // UNSAFE-RUST END
 }
 
 impl<'ll> StaticBuilderMethods for Builder<'_, 'll, '_> {
@@ -1318,7 +1337,7 @@ impl<'a, 'll, 'tcx> Builder<'a, 'll, 'tcx> {
     fn with_cx(cx: &'a CodegenCx<'ll, 'tcx>) -> Self {
         // Create a fresh builder from the crate context.
         let llbuilder = unsafe { llvm::LLVMCreateBuilderInContext(cx.llcx) };
-        Builder { llbuilder, cx }
+        Builder { llbuilder, cx, process_unsafe: false }
     }
 
     pub fn llfn(&self) -> &'ll Value {

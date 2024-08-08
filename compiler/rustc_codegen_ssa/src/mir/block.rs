@@ -1272,8 +1272,18 @@ impl<'a, 'tcx, Bx: BuilderMethods<'a, 'tcx>> FunctionCx<'a, 'tcx, Bx> {
             debug!("codegen_block({:?}={:?})", bb, data);
 
             for statement in &data.statements {
+                // UNSAFE-RUST BEGIN
+                // Set the Builder's process_unsafe.
+                bx.check_process_unsafe_stmt(&mir, statement);
+                // UNSAFE-RUST END
+
                 self.codegen_statement(bx, statement);
             }
+
+
+            // UNSAFE-RUST BEGIN
+            bx.check_process_unsafe_terminator(&mir, &data.terminator());
+            // UNSAFE-RUST END
 
             let merging_succ = self.codegen_terminator(bx, bb, data.terminator());
             if let MergingSucc::False = merging_succ {
