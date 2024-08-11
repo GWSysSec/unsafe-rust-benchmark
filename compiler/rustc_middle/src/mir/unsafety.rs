@@ -4,7 +4,8 @@
 //! to be used in MIR.
 
 use rustc_span::Span;
-use rustc_middle::thir::Thir;
+use rustc_middle::thir::{Thir, BodyTy};
+use rustc_hir::Safety;
 use rustc_macros::{HashStable, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 
 #[derive(Clone, TyEncodable, TyDecodable, Debug, HashStable, TypeFoldable, TypeVisitable)]
@@ -26,10 +27,23 @@ impl UnsafeCode {
     }
 
     /// Collect unsafe code information of a function.
-    /// Currently we only collect the Span of unsafe blocks.
+    /// 
+    /// Currently we only collect two pieces of information:
+    /// 1. whether a function is unsafe
+    /// 2. the Span of unsafe blocks in a "safe" function.
     pub fn new<'tcx>(thir: Option<&Thir<'tcx>>) -> UnsafeCode {
         let mut unsafe_code = Self::new_empty();
+
         if let Some(thir) = thir {
+            // Check whether this is an unsafe function.
+            if let BodyTy::Fn(fn_sig) = thir.body_type {
+                if let Safety::Unsafe = fn_sig.safety {
+                    unsafe_code.is_unsafe_fn = true;
+                    return unsafe_code;
+                }
+            }
+
+            // Collect unsafe blocks in a "safe" function.
             for block in &thir.blocks {
                 match block.safety_mode {
                     rustc_middle::thir::BlockSafety::ExplicitUnsafe(_hir_id) => {
@@ -46,8 +60,12 @@ impl UnsafeCode {
         unsafe_code
     }
 
-    /// Check whether an MIR statment/terminator (by its Span) is in an unsafe block.
+    /// Check whether an MIR statment/terminator (by its Span) is in an unsafe fn/block.
     pub fn in_unsafe(&self, span: Span) -> bool {
+        if self.is_unsafe_fn {
+            return true;
+        }
+
         if let Some(blocks) = &self.unsafe_blocks {
             for block in blocks {
                 if block.contains(span) {
@@ -56,6 +74,6 @@ impl UnsafeCode {
             }
         }
 
-        return false;
+        false
     }
 }
