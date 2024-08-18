@@ -2441,3 +2441,9 @@ extern "C" {
         error_callback: GetSymbolsErrorCallback,
     ) -> *mut c_void;
 }
+
+// UNSAFE-RUST BEGIN
+extern "C" {
+    pub fn LLVMSetInstUnsafeMetadata(I: &Value);
+}
+// UNSAFE-RUST END

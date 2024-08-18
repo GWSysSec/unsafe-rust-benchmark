@@ -1845,4 +1845,16 @@ impl<'a, 'll, 'tcx> Builder<'a, 'll, 'tcx> {
             );
         }
     }
+
+    // UNSAFE-RUST BEGIN
+    /// Add an unsafe metadata to the generated LLVM instruction if the
+    /// corresponding MIR code is in an unsafe fn/block.
+    fn set_llvm_inst_safety_metadata(&self, inst: &'ll Value) {
+        if self.process_unsafe {
+            unsafe {
+                llvm::LLVMSetInstUnsafeMetadata(inst);
+            }
+        }
+    }
+    // UNSAFE-RUST END
 }
