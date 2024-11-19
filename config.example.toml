@@ -36,6 +36,9 @@
 # Tweaking how LLVM is compiled
 # =============================================================================
 [llvm]
+download-ci-llvm = false
+optimize = true
+targets = X86
 
 # Whether to use Rust CI built LLVM instead of locally building it.
 #
@@ -402,7 +405,7 @@
 # General install configuration options
 # =============================================================================
 [install]
-
+prefix = "/Documents/Github/unsafe-rust-benchmark/build"
 # Where to install the generated toolchain. Must be an absolute path.
 #prefix = "/usr/local"
 
