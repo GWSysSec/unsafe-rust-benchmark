@@ -33,7 +33,7 @@ use std::ptr;
 use tracing::{debug, instrument};
 
 // UNSAFE-RUST BEGIN
-use rustc_middle::mir::{Body, Statement, Terminator};
+use rustc_middle::mir::{Body, Statement, Terminator, unsafety};
 // UNSAFE-RUST END
 
 // All Builders must have an llfn associated with them
@@ -1406,10 +1406,12 @@ impl<'a, 'll, 'tcx> BuilderMethods<'a, 'tcx> for Builder<'a, 'll, 'tcx> {
 
     // UNSAFE-RUST BEGIN
     fn check_process_unsafe_stmt(&mut self, mir: &Body<'tcx>, stmt: &Statement<'tcx>) {
+        if unsafety::ignore_fn(self.cx.tcx, mir) { return; }
         self.process_unsafe = mir.unsafe_code.in_unsafe(stmt.source_info.span);
     }
 
     fn check_process_unsafe_terminator(&mut self, mir: &Body<'tcx>, term: &Terminator<'tcx>) {
+        if unsafety::ignore_fn(self.cx.tcx, mir) { return; }
         self.process_unsafe = mir.unsafe_code.in_unsafe(term.source_info.span);
     }
     // UNSAFE-RUST END
