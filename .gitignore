@@ -35,6 +35,8 @@ Session.vim
 config.mk
 config.stamp
 no_llvm_build
+Cargo.lock
+Cargo.toml
 
 ## Build
 /dl/
