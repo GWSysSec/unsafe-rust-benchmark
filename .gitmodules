@@ -32,8 +32,8 @@
 	shallow = true
 [submodule "src/llvm-project"]
 	path = src/llvm-project
-	url = git@github.com:GWSysSec/unsafe-llvm-benchmark.git
-	branch = oscardev
+	url = https://github.com/GWSysSec/unsafe-llvm-benchmark.git
+	branch = noahdev
 	shallow = false
 [submodule "src/doc/embedded-book"]
 	path = src/doc/embedded-book
