@@ -1569,6 +1569,10 @@ options! {
     target_feature: String = (String::new(), parse_target_feature, [TRACKED],
         "target specific attributes. (`rustc --print target-features` for details). \
         This feature is unsafe."),
+    // UNSAFE-RUST BEGIN
+    unsafe_include_native_lib: bool = (false, parse_bool, [UNTRACKED],
+        "consider unsafe instructions in native lib functions included in the target program"),
+    // UNSAFE-RUST END
     // tidy-alphabetical-end
 
     // If you add a new option, please update:

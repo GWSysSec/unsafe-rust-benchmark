@@ -7,12 +7,10 @@ use rustc_span::Span;
 use rustc_middle::thir::{Thir, BodyTy};
 use rustc_hir::Safety;
 use rustc_macros::{HashStable, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
-///UNSAFE-RUST BEGIN
 use super::Body;
 use super::ty::TyCtxt;
 
 use phf::phf_set;
-///UNSAFE-RUST END
 
 #[derive(Clone, TyEncodable, TyDecodable, Debug, HashStable, TypeFoldable, TypeVisitable)]
 pub struct UnsafeCode {
@@ -23,7 +21,6 @@ pub struct UnsafeCode {
     pub unsafe_blocks: Option<Vec::<Span>>
 }
 
-///UNSAFE-RUST BEGIN
 /// The set of Rust's native libraries. We ignore analyzing functions in these
 /// libraries for three reasons:
 ///     1. We focus on Rust applications.
@@ -42,13 +39,17 @@ static RUST_NATIVE_LIBS: phf::Set<&'static str> = phf_set! {
     "sysroot",
     "unwind"
 };
+
 /// Some native library functions, such as alloc::alloc::exchange_malloc(),
 /// are included in and compiled together with the source of the application.
-/// We ignore processing a function if it is in Rust's native libraries.
+/// We ignore processing a function if it is in Rust's native libraries and
+/// if the unsafe_include_native_lib flag is not provided.
 pub fn ignore_fn<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> bool {
-    RUST_NATIVE_LIBS.contains(tcx.crate_name(body.source.def_id().krate).as_str())
+    if tcx.sess.opts.cg.unsafe_include_native_lib {
+        return false;
+    }
+    return RUST_NATIVE_LIBS.contains(tcx.crate_name(body.source.def_id().krate).as_str());
 }
-/// UNSAFE-RUST END
 
 impl UnsafeCode {
     /// Create an empty struct of UnsafeCode.
