@@ -34,6 +34,7 @@ use tracing::{debug, instrument};
 
 // UNSAFE-RUST BEGIN
 use rustc_middle::mir::{Body, Statement, Terminator, unsafety};
+use rustc_middle::ty::print::with_no_trimmed_paths;
 // UNSAFE-RUST END
 
 // All Builders must have an llfn associated with them
@@ -271,6 +272,7 @@ impl<'a, 'll, 'tcx> BuilderMethods<'a, 'tcx> for Builder<'a, 'll, 'tcx> {
             )
         };
         self.set_llvm_inst_safety_metadata(invoke);
+        self.set_llvm_inst_stdlib_call_metadata(invoke, instance);
         if let Some(fn_abi) = fn_abi {
             fn_abi.apply_attrs_callsite(self, invoke);
         }
@@ -1382,6 +1384,7 @@ impl<'a, 'll, 'tcx> BuilderMethods<'a, 'tcx> for Builder<'a, 'll, 'tcx> {
         // Question: Should we treat a call to a safe function with all safe
         // arguments as unsafe code, if the call is in an unsafe fn/block?
         self.set_llvm_inst_safety_metadata(call);
+        self.set_llvm_inst_stdlib_call_metadata(call, instance);
         // UNSAFE-RUST END
         call
     }
@@ -1953,6 +1956,28 @@ impl<'a, 'll, 'tcx> Builder<'a, 'll, 'tcx> {
     fn set_llvm_inst_safety_metadata(&self, inst: &'ll Value) {
         if self.process_unsafe {
             unsafe { llvm::LLVMSetInstUnsafeMetadata(inst); }
+        }
+    }
+
+    /// If currently in unsafe context and the callee is a stdlib function,
+    /// attach !stdlib_call metadata with the callee's def path.
+    fn set_llvm_inst_stdlib_call_metadata(&self, inst: &'ll Value, instance: Option<Instance<'tcx>>) {
+        if !self.process_unsafe {
+            return;
+        }
+        if let Some(inst_val) = instance {
+            let crate_name = self.cx.tcx.crate_name(inst_val.def_id().krate);
+            if unsafety::is_native_lib(crate_name.as_str()) {
+                let path = with_no_trimmed_paths!(self.cx.tcx.def_path_str(inst_val.def_id()));
+                let path_bytes = path.as_bytes();
+                unsafe {
+                    llvm::LLVMSetInstStdlibCallMetadata(
+                        inst,
+                        path_bytes.as_ptr() as *const c_char,
+                        path_bytes.len(),
+                    );
+                }
+            }
         }
     }
     // UNSAFE-RUST END

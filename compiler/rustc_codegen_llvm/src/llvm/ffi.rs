@@ -2445,5 +2445,6 @@ extern "C" {
 // UNSAFE-RUST BEGIN
 extern "C" {
     pub fn LLVMSetInstUnsafeMetadata(I: &Value);
+    pub fn LLVMSetInstStdlibCallMetadata(Inst: &Value, Path: *const c_char, Len: usize);
 }
 // UNSAFE-RUST END

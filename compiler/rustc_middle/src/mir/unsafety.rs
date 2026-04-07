@@ -40,6 +40,11 @@ static RUST_NATIVE_LIBS: phf::Set<&'static str> = phf_set! {
     "unwind"
 };
 
+/// Check whether a crate name belongs to Rust's native libraries.
+pub fn is_native_lib(crate_name: &str) -> bool {
+    RUST_NATIVE_LIBS.contains(crate_name)
+}
+
 /// Some native library functions, such as alloc::alloc::exchange_malloc(),
 /// are included in and compiled together with the source of the application.
 /// We ignore processing a function if it is in Rust's native libraries and
