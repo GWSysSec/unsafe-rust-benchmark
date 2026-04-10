@@ -107,6 +107,9 @@ pub mod simplify;
 mod simplify_branches;
 mod simplify_comparison_integral;
 mod sroa;
+// UNSAFE-RUST BEGIN
+mod stdlib_api_tracker;
+// UNSAFE-RUST END
 mod unreachable_enum_branching;
 mod unreachable_prop;
 mod validate;
@@ -565,6 +568,11 @@ fn run_optimization_passes<'tcx>(tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
             // Has to be done before inlining, otherwise actual call will be almost always inlined.
             // Also simple, so can just do first
             &lower_slice_len::LowerSliceLenCalls,
+            // UNSAFE-RUST BEGIN
+            // Must run BEFORE inlining: records stdlib calls in unsafe blocks as
+            // inline asm markers that survive MIR inlining and LLVM optimization.
+            &stdlib_api_tracker::StdlibApiTracker,
+            // UNSAFE-RUST END
             // Perform inlining, which may add a lot of code.
             &inline::Inline,
             // Code from other crates may have storage markers, so this needs to happen after inlining.
