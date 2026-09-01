@@ -55,6 +55,11 @@ impl<'tcx> MirPass<'tcx> for StdlibApiTracker {
             target: BasicBlock,
             source_info: SourceInfo,
             api_path: String,
+            /// Whether the call being marked sits on an unwind path. The
+            /// marker block is spliced onto the call's return edge, and MIR
+            /// forbids a cleanup block from having a normal edge to a
+            /// non-cleanup one, so the marker has to match.
+            is_cleanup: bool,
         }
 
         let mut call_sites: Vec<CallSite> = Vec::new();
@@ -82,6 +87,7 @@ impl<'tcx> MirPass<'tcx> for StdlibApiTracker {
                         target,
                         source_info: terminator.source_info,
                         api_path: path,
+                        is_cleanup: bb_data.is_cleanup,
                     });
                 }
             }
@@ -109,7 +115,7 @@ impl<'tcx> MirPass<'tcx> for StdlibApiTracker {
 
             let marker_block = BasicBlockData {
                 statements: vec![],
-                is_cleanup: false,
+                is_cleanup: site.is_cleanup,
                 terminator: Some(Terminator {
                     source_info: site.source_info,
                     kind: TerminatorKind::InlineAsm {
