@@ -28,8 +28,17 @@ pub struct StdlibApiTracker;
 
 impl<'tcx> MirPass<'tcx> for StdlibApiTracker {
     fn is_enabled(&self, _sess: &rustc_session::Session) -> bool {
-        std::env::var("UNSAFE_ENABLE_STDLIB_TRACKER").ok().as_deref() == Some("1")
-            && std::env::var("CARGO_PRIMARY_PACKAGE").is_ok()
+        if std::env::var("UNSAFE_ENABLE_STDLIB_TRACKER").ok().as_deref() != Some("1") {
+            return false;
+        }
+        // UNSAFE_INSTRUMENT_ALL_PACKAGES=1 lifts the primary-package
+        // restriction so dependencies are tracked too; see the same override
+        // in llvm::isPrimaryPackage(). Absent the variable, only the package
+        // cargo marked primary is tracked, as before.
+        if std::env::var("UNSAFE_INSTRUMENT_ALL_PACKAGES").ok().as_deref() == Some("1") {
+            return true;
+        }
+        std::env::var("CARGO_PRIMARY_PACKAGE").is_ok()
     }
 
     fn run_pass(&self, tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
